@@ -15,5 +15,7 @@ namespace SGDBMetadata
         public string url { get; set; }
         public string thumb { get; set; }
         public AuthorSchema author { get; set; }
+        public string width { get; set; }
+        public string height { get; set; }
     }
 }

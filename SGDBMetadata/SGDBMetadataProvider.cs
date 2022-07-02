@@ -268,7 +268,7 @@ namespace SGDBMetadata
         private ImageFileOption GetHeroManually(List<HeroModel> possibleHeroes)
         {
             var selection = new List<ImageFileOption>();
-            foreach (var hero in possibleHeroes)
+            foreach (var hero in possibleHeroes.OrderByDescending(h => int.Parse(h.width)))
             {
                 selection.Add(new ThumbFileOption { Path = hero.thumb, FullRes = hero.url });
             }

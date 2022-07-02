@@ -277,24 +277,32 @@ namespace SGDBMetadata
             logger.Info(gameSearchItem?.name);
             logger.Info(platform);
             logger.Info(gameId);
+
+            ResponseModel<HeroModel> hero = null;
             if (platform != null && gameId != null)
             {
-                ResponseModel<HeroModel> hero = getSGDBGameHeroByAppId(platform, gameId); //First element of search results, should probably implement fuzzysearchquery based on intentions
-                if (hero.success && hero.data.Count > 0)
-                {
-                    return hero.data[0].url;
-                }
+                 hero = getSGDBGameHeroByAppId(platform, gameId); //First element of search results, should probably implement fuzzysearchquery based on intentions
             }
             else if (gameSearchItem != null)
             {
-                ResponseModel<HeroModel> hero = getSGDBGameHero(gameSearchItem.id);
-                if (hero.success && hero.data.Count > 0)
-                {
-                    return hero.data[0].url;
-                }
+                hero = getSGDBGameHero(gameSearchItem.id);
             }
+
+            if (hero is { success: true } && hero.data.Count > 0)
+            {
+                var model = settings.BackgroundDimension is "any"
+                    ? getLargestModel(hero.data)
+                    : hero.data.First();
+
+                return model.url;
+            }
+
             return "bad path";
         }
+
+        private MediaModel getLargestModel(IEnumerable<MediaModel> models)
+            => models.Aggregate((curMax, x)
+                => int.Parse(curMax.width) < int.Parse(x.width) ? x : curMax);
 
         public List<HeroModel> getHeroImages(GenericItemOption searchSelection, string platform, string gameId)
         {
@@ -306,41 +314,38 @@ namespace SGDBMetadata
             if (platform != null && gameId != null)
             {
                 ResponseModel<HeroModel> hero = getSGDBGameHeroByAppId(platform, gameId); //First element of search results, should probably implement fuzzysearchquery based on intentions
-                if (hero.success && hero.data.Count > 0)
+                switch (hero.success)
                 {
-                    return hero.data;
-                }
-                else if (hero.success && hero.data.Count == 0)
-                {
-                    return null;
-                }
-                else
-                {
-                    var sgdbException = new Exception("Service failure during getHeroImages");
-                    throw sgdbException;
+                    case true when hero.data.Count > 0:
+                        return hero.data;
+                    case true when hero.data.Count == 0:
+                        return null;
+                    default:
+                    {
+                        var sgdbException = new Exception("Service failure during getHeroImages");
+                        throw sgdbException;
+                    }
                 }
             }
-            else if (searchSelection != null)
+
+            if (searchSelection != null)
             {
                 ResponseModel<HeroModel> hero = getSGDBGameHero(int.Parse(searchSelection.Description));
-                if (hero.success && hero.data.Count > 0)
+                switch (hero.success)
                 {
-                    return hero.data;
-                }
-                else if (hero.success && hero.data.Count == 0)
-                {
-                    return null;
-                }
-                else
-                {
-                    var sgdbException = new Exception("Service failure during getHeroImages");
-                    throw sgdbException;
+                    case true when hero.data.Count > 0:
+                        return hero.data;
+                    case true when hero.data.Count == 0:
+                        return null;
+                    default:
+                    {
+                        var sgdbException = new Exception("Service failure during getHeroImages");
+                        throw sgdbException;
+                    }
                 }
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         public string getLogoImageUrl(SearchModel gameSearchItem, string platform, string gameId)
